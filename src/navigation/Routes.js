@@ -50,11 +50,12 @@ const BottomTabNavigator = () => (
                 borderWidth: 0,
                 marginHorizontal: 10,
                 justifyContent: "center",
-                alignItems: "center"
+                alignItems: "center",
             },
             tabBarItemStyle: {
                 justifyContent: 'center',
                 alignItems: 'center',
+                marginTop: 2
             },
             tabBarLabelStyle: ({ focused }) => ({
                 fontSize: 12,

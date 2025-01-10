@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import HeaderComponent from '../components/HeaderComponent';
+import MoviecardComponent from '../components/MoviecardComponent';
 
 const Genres = ["All", "Action", "Comedy", "Romance", "Horror", "Sci-Fi"];
 
@@ -8,21 +9,31 @@ const HomeScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <HeaderComponent />
-            <FlatList
-                data={Genres}
-                horizontal
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.genreItem}>
-                        <Text style={styles.genreText}>{item}</Text>
-                    </TouchableOpacity>
-                )}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.genreList}
-            />
-            {/* <View style={styles.content}>
-                <Text>HomeScreen Content</Text>
-            </View> */}
+            <View style={styles.content}>
+                <FlatList
+                    data={Genres}
+                    horizontal
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity style={styles.genreItem}>
+                            <Text style={styles.genreText}>{item}</Text>
+                        </TouchableOpacity>
+                    )}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.genreList}
+                />
+                <FlatList
+                    data={Genres}
+                    horizontal
+                    keyExtractor={(item) => item}
+                    showsHorizontalScrollIndicator={false}
+                    renderItem={({ item }) => (
+                        <View style={styles.movieCardContainer}>
+                            <MoviecardComponent />
+                        </View>
+                    )}
+                />
+            </View>
         </SafeAreaView>
     );
 };
@@ -37,22 +48,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
     },
     genreItem: {
-        width: 100,
-        height: 30,
+        height: 40,
         marginRight: 10,
-        paddingHorizontal: 15,
-        // paddingVertical: 8,
-        borderRadius: 20,
+        paddingHorizontal: 20,
+        borderRadius: 10,
         backgroundColor: '#f0f0f0',
+        justifyContent: "center",
+        marginTop: 10,
     },
     genreText: {
         fontSize: 16,
         color: '#333',
     },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+    movieCardContainer: {
+        marginHorizontal: 10,
+        marginTop: 10,
     },
 });
 

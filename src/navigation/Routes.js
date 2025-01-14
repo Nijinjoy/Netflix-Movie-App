@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons'; // Import MaterialIcons
+import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome for 'heart' icon
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import CategoryScreen from '../screens/CategoryScreen';
+import MovieScreen from '../screens/MovieScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -18,37 +19,23 @@ const BottomTabNavigator = () => (
                 let iconName;
                 if (route.name === 'Home') {
                     iconName = 'home';
+                    return <MaterialIcons name={iconName} size={size} color={color} />;
                 } else if (route.name === 'Profile') {
                     iconName = 'person';
-                } else if (route.name === 'Settings') {
-                    iconName = 'settings';
+                    return <MaterialIcons name={iconName} size={size} color={color} />;
+                } else if (route.name === 'Favourites') {  // Use FontAwesome for 'Favourites'
+                    iconName = 'heart';  // FontAwesome icon for 'Favourites'
+                    return <Icon name={iconName} size={size} color={color} />;
                 } else if (route.name === 'Category') {
                     iconName = 'category';
+                    return <MaterialIcons name={iconName} size={size} color={color} />;
                 }
-
-                return (
-                    <MaterialIcons
-                        name={iconName}
-                        size={size}
-                        color={focused ? '#3F51B5' : '#B0BEC5'}
-                    />
-                );
             },
             tabBarStyle: {
-                position: 'absolute',
-                bottom: 10,
-                left: 10,
-                right: 20,
                 backgroundColor: '#F5F5F5',
-                borderTopLeftRadius: 40,
-                borderTopRightRadius: 40,
-                borderBottomLeftRadius: 40,
-                borderBottomRightRadius: 40,
                 height: 60,
-                paddingBottom: 10,
                 elevation: 20,
                 borderWidth: 0,
-                marginHorizontal: 10,
                 justifyContent: "center",
                 alignItems: "center",
             },
@@ -83,9 +70,9 @@ const BottomTabNavigator = () => (
             options={{ tabBarLabel: 'Profile' }}
         />
         <Tab.Screen
-            name="Settings"
+            name="Favourites" 
             component={SettingsScreen}
-            options={{ tabBarLabel: 'Settings' }}
+            options={{ tabBarLabel: 'Favourites' }}
         />
     </Tab.Navigator>
 );
@@ -97,6 +84,8 @@ const Routes = () => {
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="Main" component={BottomTabNavigator} />
+                <Stack.Screen name="movie" component={MovieScreen} />
+                <Stack.Screen name="profile" component={ProfileScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

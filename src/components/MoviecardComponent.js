@@ -1,69 +1,76 @@
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, ImageBackground } from 'react-native';
 import React, { useState } from 'react';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { imdb } from '../assets/images';
+import { imdb } from '../assets/images'; // Make sure you have this asset for IMDB
 import { TouchableOpacity } from 'react-native';
+import { getPoster, getLanguage } from '../services/movieService'; // Ensure getLanguage is being used
 
-const MoviecardComponent = () => {
-    const [isLiked, setIsLiked] = useState(false);
-
-    const handleLikeToggle = () => {
-        setIsLiked(prevState => !prevState);
-    };
+const MoviecardComponent = ({
+    title,
+    poster,
+    language,
+    voteAverage,
+    voteCount,
+    size,
+    heartLess,
+    onPress,
+    handleLikeToggle,
+    isLiked,
+}) => {
 
     return (
-        <View style={styles.wrapper}>
-            <View style={styles.container}>
+        <TouchableOpacity style={styles.wrapper} onPress={onPress}>
+            <ImageBackground
+                resizeMode='stretch'
+                source={{ uri: getPoster(poster) }}
+                style={styles.imageBackground}
+                imageStyle={{ borderRadius: 10 }}
+            >
                 <View style={styles.imdbBadge}>
                     <Image
                         source={imdb}
                         style={styles.imdbImage}
                     />
-                    <Text style={styles.ratingText}>8.5</Text>
+                    <Text style={styles.ratingText}>{voteAverage}</Text>
                 </View>
-                <Text style={styles.text}>MoviecardComponent</Text>
-                <TouchableOpacity style={styles.heartIconContainer} onPress={handleLikeToggle}>
-                    <MaterialIcons
-                        name={isLiked ? "favorite" : "favorite-border"}
-                        size={25}
-                        color={isLiked ? "red" : "white"}
-                    />
-                </TouchableOpacity>
-            </View>
+                {!heartLess && (
+                    <TouchableOpacity style={styles.heartIconContainer} onPress={handleLikeToggle}>
+                        <MaterialIcons
+                            name={isLiked ? 'favorite' : 'favorite-border'}
+                            size={25}
+                            color={isLiked ? 'red' : 'white'}
+                        />
+                    </TouchableOpacity>
+                )}
+            </ImageBackground>
             <View style={styles.info}>
-                <Text style={styles.movieName}>URI - Surgical Strike</Text>
+                <Text style={styles.movieName} numberOfLines={2}>{title}</Text>
                 <View style={styles.languageRow}>
-                    <Text style={styles.language}>Language</Text>
+                    {/* Display Language here */}
+                    <Text style={styles.language}>{language || 'Unknown Language'}</Text>
                     <View style={styles.heartContainer}>
+                        {/* Display Vote Count (as a percentage or directly as count) */}
                         <MaterialIcons name="favorite" size={20} color="red" />
-                        <Text style={styles.heartText}>90%</Text>
+                        <Text style={styles.heartText}>{voteCount ? `${voteCount}` : '0'}</Text>
                     </View>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };
-
-export default MoviecardComponent;
+export default MoviecardComponent
 
 const styles = StyleSheet.create({
     wrapper: {
         alignItems: 'center',
         marginBottom: 20,
     },
-    container: {
-        backgroundColor: 'grey',
+    imageBackground: {
         width: 250,
         height: 300,
-        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
-    },
-    text: {
-        color: '#fff',
-        fontSize: 16,
-        textAlign: 'center',
     },
     imdbBadge: {
         position: 'absolute',
@@ -73,6 +80,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#F5C518',
         borderBottomLeftRadius: 10,
+        borderTopRightRadius: 10,
         paddingVertical: 2,
         paddingHorizontal: 5,
     },
@@ -96,6 +104,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
         marginBottom: 5,
+        width: 190
     },
     languageRow: {
         flexDirection: 'row',
@@ -117,8 +126,8 @@ const styles = StyleSheet.create({
     },
     heartIconContainer: {
         position: 'absolute',
-        bottom: 0,
-        left: 4,
+        bottom: 10,
+        left: 10,
         padding: 5,
     },
 });

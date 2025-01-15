@@ -1,200 +1,401 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
-import HeaderComponent from '../components/HeaderComponent';
-import MoviecardComponent from '../components/MoviecardComponent';
-import { getNowPlayingMovies, getUpcomingMovies, getTopRated } from '../services/movieService';
-import { useNavigation } from '@react-navigation/native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    ActivityIndicator,
+    ImageBackground,
+    ScrollView,
+    Linking,
+    Image,
+    TouchableOpacity,
+    FlatList,
+    Pressable,
+} from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { getMovieById, getPoster, getVideo, getMovieRecommendations, getMovieImages } from '../services/movieService';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const Genres = ["All", "Upcoming", "Top-Rated"];
-
-const HomeScreen = () => {
+const MovieScreen = () => {
+    const route = useRoute();
     const navigation = useNavigation();
-    const [activeGenre, setActiveGenre] = useState("All");
-    const [nowPlayingMovies, setNowPlayingMovies] = useState({});
-    const [upcomingMovies, setUpcomingMovies] = useState({});
-    const [topratedMovies, setTopratedMovies] = useState({});
+    const { movieId } = route.params;
+    const [movie, setMovie] = useState({});
+    const [recommendations, setRecommendations] = useState([]);
+    const [movieImages, setMovieImages] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    console.log("movie===>", movieImages);
 
     useEffect(() => {
-        getNowPlayingMovies().then((movieResponse) =>
-            setNowPlayingMovies(movieResponse.data)
-        );
-        getUpcomingMovies().then((movieResponse) =>
-            setUpcomingMovies(movieResponse.data)
-        );
-        getTopRated().then((movieResponse) =>
-            setTopratedMovies(movieResponse?.data)
-        );
-    }, []);
+        getMovieById(movieId)
+            .then((response) => {
+                setMovie(response?.data);
+                return getMovieRecommendations(movieId);
+            })
+            .then((response) => {
+                getMovieImages(response?.data?.results || []);
+                return getMovieImages(movieId);
+            })
+            .then((response) => {
+                setMovieImages(response?.data);
+                setLoading(false);
+            })
+            .catch((err) => console.error(err));
+    }, [movieId]);
 
-    const renderMovies = () => {
-        switch (activeGenre) {
-            case 'Upcoming':
-                return (
-                    <FlatList
-                        data={upcomingMovies.results}
-                        horizontal
-                        keyExtractor={(item) => item.id.toString()}
-                        showsHorizontalScrollIndicator={false}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.movieCardContainer}
-                                onPress={() => navigation.navigate("movie", { movieId: item.id })}
-                            >
-                                <Image
-                                    source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
-                                    style={styles.poster}
-                                />
-                            </TouchableOpacity>
-                        )}
-                    />
-                );
-            case 'Top-Rated':
-                return (
-                    <FlatList
-                        data={topratedMovies.results}
-                        horizontal
-                        keyExtractor={(item) => item.id.toString()}
-                        showsHorizontalScrollIndicator={false}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.movieCardContainer}
-                                onPress={() => navigation.navigate("movie", { movieId: item.id })}
-                            >
-                                <Image
-                                    source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
-                                    style={styles.poster}
-                                />
-                            </TouchableOpacity>
-                        )}
-                    />
-                );
-            default:
-                return (
-                    <ScrollView>
-                        <Text style={styles.sectionTitle}>Upcoming Movies</Text>
-                        <FlatList
-                            data={upcomingMovies.results}
-                            horizontal
-                            keyExtractor={(item) => item.id.toString()}
-                            showsHorizontalScrollIndicator={false}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={styles.movieCardContainer}
-                                    onPress={() => navigation.navigate("movie", { movieId: item.id })}
-                                >
-                                    <Image
-                                        source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
-                                        style={styles.poster}
-                                    />
-                                </TouchableOpacity>
-                            )}
-                        />
-                        <Text style={styles.sectionTitle}>Top Rated Movies</Text>
-                        <FlatList
-                            data={topratedMovies.results}
-                            horizontal
-                            keyExtractor={(item) => item.id.toString()}
-                            showsHorizontalScrollIndicator={false}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={styles.movieCardContainer}
-                                    onPress={() => navigation.navigate("movie", { movieId: item.id })}
-                                >
-                                    <Image
-                                        source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
-                                        style={styles.poster}
-                                    />
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </ScrollView>
-                );
-        }
+
+    if (loading) {
+        return (
+            <View style={styles.center}>
+                <ActivityIndicator size="large" color="#E50914" />
+            </View>
+        );
+    }
+
+    const handleBackPress = () => {
+        navigation.goBack();
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <HeaderComponent />
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView style={styles.container}>
+            <ImageBackground
+                source={{ uri: getPoster(movie?.backdrop_path) }}
+                style={styles.imageBackground}
+                resizeMode="cover"
+            >
+                <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+                    <Icon name="arrow-back" size={28} color="#fff" />
+                </TouchableOpacity>
+                <View style={styles.overlay}>
+                    <TouchableOpacity style={styles.shareButton} onPress={() => Linking.openURL(getVideo(movie.videos.results[0].key))}>
+                        <Icon name="share" size={28} color="#fff" />
+                    </TouchableOpacity>
+
+                    <Text style={styles.title}>{movie?.title}</Text>
+                    <Text style={styles.tagline}>{movie?.tagline}</Text>
+
+                    <View style={styles.ratingsContainer}>
+                        <Icon name="star" size={20} color="#FFD700" />
+                        <Text style={styles.voteText}>
+                            {movie?.vote_average.toFixed(1)} / 10
+                        </Text>
+                        <Text style={styles.voteCount}>
+                            ({movie?.vote_count} votes)
+                        </Text>
+                    </View>
+                    <TouchableOpacity style={styles.playButton}>
+                        <Icon name="play-arrow" size={24} color="white" />
+                        <Text style={styles.playText}>Play</Text>
+                    </TouchableOpacity>
+                </View>
+            </ImageBackground>
+            <View style={styles.detailsContainer}>
+                <Text style={styles.sectionTitle}>Overview</Text>
+                <Text style={styles.overview}>{movie?.overview}</Text>
+
+                <View style={styles.divider} />
+                <Text style={styles.sectionTitle}>Genres</Text>
+                <Text style={styles.details}>
+                    {movie?.genres?.map((genre) => genre.name).join(', ')}
+                </Text>
+                <View style={styles.divider} />
+                <View style={styles.row}>
+                    <View style={styles.column}>
+                        <Text style={styles.sectionTitle}>Release Date</Text>
+                        <Text style={styles.details}>{movie?.release_date}</Text>
+                    </View>
+                    <View style={styles.column}>
+                        <Text style={styles.sectionTitle}>Runtime</Text>
+                        <Text style={styles.details}>{movie?.runtime} minutes</Text>
+                    </View>
+                </View>
+                <View style={styles.divider} />
+                <Text style={styles.sectionTitle}>Production Companies</Text>
+                {movie?.production_companies?.map((company) => (
+                    <View key={company.id} style={styles.companyRow}>
+                        {company.logo_path && (
+                            <Image
+                                source={{ uri: getPoster(company.logo_path) }}
+                                style={styles.companyLogo}
+                            />
+                        )}
+                        <Text style={styles.details}>{company.name}</Text>
+                    </View>
+                ))}
+                <View style={styles.divider} />
+                <Text style={styles.sectionTitle}>Production Countries</Text>
+                <View style={styles.countryRow}>
+                    {movie?.production_countries?.map((country) => (
+                        <Text key={country.iso_3166_1} style={styles.countryText}>
+                            {country.name}
+                        </Text>
+                    ))}
+                </View>
+
+                <Text style={styles.sectionTitle}>Trailer</Text>
                 <FlatList
-                    data={Genres}
+                    data={movieImages?.results}
                     horizontal
-                    keyExtractor={(item, index) => index.toString()}
+                    keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.genreItem,
-                                activeGenre === item && styles.activeGenre,
-                            ]}
-                            onPress={() => setActiveGenre(item)}
-                        >
-                            <Text
-                                style={[
-                                    styles.genreText,
-                                    activeGenre === item && styles.activeGenreText,
-                                ]}
+                        <View style={styles.cardContainer}>
+                            {/* <Text style={styles.trailerName}>{item.name}</Text> */}
+                            <TouchableOpacity
+                                style={styles.playButton}
+                                onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${item.key}`)}
                             >
-                                {item}
-                            </Text>
-                        </TouchableOpacity>
+                                <Icon name="play-arrow" size={40} color="white" />
+                            </TouchableOpacity>
+                        </View>
                     )}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.genreList}
                 />
-                {renderMovies()}
-            </ScrollView>
-        </SafeAreaView>
+
+            </View>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#000',
+        backgroundColor: '#141414',
     },
-    scrollContainer: {
-        paddingBottom: 20,
+    imageBackground: {
+        width: '100%',
+        height: 370,
+        justifyContent: 'flex-end',
     },
-    genreList: {
-        paddingVertical: 10,
-        paddingHorizontal: 10,
+    overlay: {
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        padding: 20,
+        position: 'relative',
     },
-    genreItem: {
-        height: 40,
-        marginRight: 10,
-        paddingHorizontal: 20,
-        borderRadius: 20,
-        backgroundColor: '#333',
-        justifyContent: 'center',
+    backButton: {
+        position: 'absolute',
+        top: 40, // Adjusted top value for better alignment
+        left: 20,
+        zIndex: 1,
     },
-    activeGenre: {
-        backgroundColor: '#E50914',
+    shareButton: {
+        position: 'absolute',
+        top: 40, // Adjusted top value for better alignment
+        right: 20,
+        zIndex: 1,
     },
-    genreText: {
-        fontSize: 14,
-        color: '#FFF',
-        textTransform: 'capitalize',
-    },
-    activeGenreText: {
-        color: '#FFF',
+    title: {
+        fontSize: 30,
         fontWeight: 'bold',
+        color: '#fff',
+    },
+    tagline: {
+        fontSize: 16,
+        color: '#ccc',
+        fontStyle: 'italic',
+        marginVertical: 8,
+    },
+    ratingsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 10,
+    },
+    voteText: {
+        fontSize: 16,
+        color: '#FFD700',
+        marginLeft: 5,
+    },
+    voteCount: {
+        fontSize: 14,
+        color: '#aaa',
+        marginLeft: 8,
+    },
+    playButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+        marginTop: 10,
+        alignSelf: 'flex-start',
+    },
+    playText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: 'white',
+        marginLeft: 8,
+    },
+    detailsContainer: {
+        padding: 20,
+        backgroundColor: '#1c1c1c',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        marginTop: -10,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#FFF',
-        marginHorizontal: 15,
-        marginTop: 20,
+        color: '#fff',
+        marginBottom: 10,
     },
-    movieCardContainer: {
-        marginHorizontal: 10,
-        marginTop: 10,
+    overview: {
+        fontSize: 16,
+        lineHeight: 24,
+        color: '#ccc',
     },
-    poster: {
-        width: 120,
-        height: 180,
+    details: {
+        fontSize: 14,
+        color: '#aaa',
+        marginBottom: 8,
+    },
+    countryRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginVertical: 10,
+    },
+    countryText: {
+        fontSize: 14,
+        color: '#aaa',
+        marginRight: 12,
+        marginBottom: 5,
+        backgroundColor: '#333',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#333',
+        marginVertical: 16,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    column: {
+        flex: 1,
+    },
+    companyRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    companyLogo: {
+        width: 50,
+        height: 20,
+        resizeMode: 'contain',
+        marginRight: 8,
+    },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    recommendationImage: {
+        width: 200,
+        height: 150,
         borderRadius: 10,
+    },
+    recommendationTitle: {
+        fontSize: 14,
+        marginTop: 5,
+        color: '#333',
+        textAlign: 'center',
+    },
+
+    recommendationsContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 20,
+        marginTop: 20,  // Added space from the movie details section
+    },
+    recommendationsTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 15,
+    },
+    recommendationsList: {
+        paddingLeft: 10,
+    },
+    recommendationCard: {
+        width: 180,  // Adjusted width for a more compact look
+        marginRight: 20,
+        marginBottom: 20,  // Added bottom margin for more space between cards
+        borderRadius: 12,  // More rounded corners for a sleek look
+        backgroundColor: '#222',  // Darker background to match theme
+        elevation: 5,  // Added shadow for a 3D effect
+        overflow: 'hidden',
+    },
+    recommendationImage: {
+        width: '100%',
+        height: 250,  // Adjusted image height for better visual proportions
+        borderBottomLeftRadius: 12,
+        borderBottomRightRadius: 12,
+    },
+    recommendationTitle: {
+        fontSize: 16,  // Slightly bigger title font
+        fontWeight: 'bold',
+        padding: 8,
+        color: '#fff',  // White text for better contrast
+        textAlign: 'center',
+    },
+    backButton: {
+        position: 'absolute',
+        top: 40,
+        left: 20,
+        zIndex: 1,
+        padding: 10, // Optional: Add padding for better touch area
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Optional: Add a semi-transparent background
+        borderRadius: 20, // Optional: Round the button
+    },
+    imageName: {
+        color: '#fff',  // Or any color you prefer for the text
+        textAlign: 'center',
+        fontSize: 14,
+    },
+
+    cardContainer: {
+        backgroundColor: '#333',
+        borderRadius: 12,
+        marginRight: 20,
+        padding: 10,
+        width: 100,
+        alignItems: 'center',  // Center content horizontally
+        justifyContent: 'center', // Center content vertically
+        elevation: 5,  // Adds shadow on Android
+        shadowColor: '#000', // Shadow color for iOS
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3, // Subtle shadow
+        shadowRadius: 8, // Soft shadow effect
+        transform: [{ scale: 1 }], // Add subtle scaling on tap for interaction feedback
+    },
+    trailerName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',  // White text on dark background
+        marginBottom: 15, // Space between name and play button
+        textAlign: 'center',
+    },
+    playButton: {
+        backgroundColor: '#E50914',
+        padding: 10,
+        borderRadius: 50, // Circular button for a more prominent effect
+        alignItems: 'center',
+        justifyContent: 'center',
+        elevation: 5,
     },
 });
 
-export default HomeScreen;
+export default MovieScreen;
+
+
+{/* <View style={styles.recommendationsContainer}>
+<Text style={styles.recommendationsTitle}>Recommendations</Text>
+<FlatList
+    data={recommendations}
+    horizontal
+    keyExtractor={(item) => item.id.toString()}
+    renderItem={renderRecommendation}
+    contentContainerStyle={styles.recommendationsList}
+/>
+</View> */}

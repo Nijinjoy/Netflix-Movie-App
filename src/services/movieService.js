@@ -38,7 +38,7 @@ const getMovieRecommendations = (movieId) =>
 const getMovieImages = (movieId) =>
     TMDB_HTTP_REQUEST.get(ENDPOINTS.movie_videos(movieId));
 
-console.log("getMovieImages===>", getMovieImages);
+// const getMovieList = () => TMDB_HTTP_REQUEST.get(ENDPOINTS.genres);
 
 export {
     getNowPlayingMovies,
@@ -49,5 +49,6 @@ export {
     getVideo,
     getTopRated,
     getMovieImages,
-    getMovieRecommendations
+    getMovieRecommendations,
+    // getMovieList
 };

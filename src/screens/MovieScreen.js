@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     FlatList,
     Pressable,
+    StatusBar
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { getMovieById, getPoster, getVideo, getMovieRecommendations, getMovieImages } from '../services/movieService';
@@ -24,8 +25,7 @@ const MovieScreen = () => {
     const [recommendations, setRecommendations] = useState([]);
     const [movieImages, setMovieImages] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    console.log("movie===>", movieImages);
+    const [showFullOverview, setShowFullOverview] = useState(false);
 
     useEffect(() => {
         getMovieById(movieId)
@@ -34,7 +34,7 @@ const MovieScreen = () => {
                 return getMovieRecommendations(movieId);
             })
             .then((response) => {
-                getMovieImages(response?.data?.results || []);
+                setRecommendations(response?.data?.results || []);
                 return getMovieImages(movieId);
             })
             .then((response) => {
@@ -44,6 +44,31 @@ const MovieScreen = () => {
             .catch((err) => console.error(err));
     }, [movieId]);
 
+    const handleBackPress = () => {
+        navigation.goBack();
+    };
+
+    const handleSharePress = () => {
+        console.log('Share button pressed');
+    };
+
+    const handleBookmarkPress = () => {
+        console.log('Bookmark button pressed');
+    };
+
+    const handlePlayPress = () => {
+        console.log('Play button pressed');
+    };
+
+    const handleDownloadPress = () => {
+        console.log('Download button pressed');
+    };
+
+    const truncatedOverview = movie?.overview?.length > 80 ? movie?.overview?.substring(0, 80) + '...' : movie?.overview;
+
+    const toggleOverview = () => {
+        setShowFullOverview((prevState) => !prevState);
+    };
 
     if (loading) {
         return (
@@ -53,12 +78,9 @@ const MovieScreen = () => {
         );
     }
 
-    const handleBackPress = () => {
-        navigation.goBack();
-    };
-
     return (
         <ScrollView style={styles.container}>
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             <ImageBackground
                 source={{ uri: getPoster(movie?.backdrop_path) }}
                 style={styles.imageBackground}
@@ -67,90 +89,65 @@ const MovieScreen = () => {
                 <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
                     <Icon name="arrow-back" size={28} color="#fff" />
                 </TouchableOpacity>
-                <View style={styles.overlay}>
-                    <TouchableOpacity style={styles.shareButton} onPress={() => Linking.openURL(getVideo(movie.videos.results[0].key))}>
-                        <Icon name="share" size={28} color="#fff" />
-                    </TouchableOpacity>
-
-                    <Text style={styles.title}>{movie?.title}</Text>
-                    <Text style={styles.tagline}>{movie?.tagline}</Text>
-
-                    <View style={styles.ratingsContainer}>
-                        <Icon name="star" size={20} color="#FFD700" />
-                        <Text style={styles.voteText}>
-                            {movie?.vote_average.toFixed(1)} / 10
-                        </Text>
-                        <Text style={styles.voteCount}>
-                            ({movie?.vote_count} votes)
-                        </Text>
-                    </View>
-                    <TouchableOpacity style={styles.playButton}>
-                        <Icon name="play-arrow" size={24} color="white" />
-                        <Text style={styles.playText}>Play</Text>
-                    </TouchableOpacity>
-                </View>
             </ImageBackground>
-            <View style={styles.detailsContainer}>
-                <Text style={styles.sectionTitle}>Overview</Text>
-                <Text style={styles.overview}>{movie?.overview}</Text>
-
-                <View style={styles.divider} />
-                <Text style={styles.sectionTitle}>Genres</Text>
-                <Text style={styles.details}>
-                    {movie?.genres?.map((genre) => genre.name).join(', ')}
+            <View style={styles.movieInfoContainer}>
+                <View style={styles.movieHeader}>
+                    <Text style={styles.movieTitle}>{movie?.title}</Text>
+                    <View style={styles.iconContainer}>
+                        <TouchableOpacity onPress={handleSharePress}>
+                            <Icon name="share" size={28} color="#fff" style={styles.icon} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleBookmarkPress}>
+                            <Icon name="bookmark-border" size={28} color="#fff" style={styles.icon} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity style={styles.playButton} onPress={handlePlayPress}>
+                        <Icon name="play-arrow" size={24} color="#fff" />
+                        <Text style={styles.buttonText}>Play</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.downloadButton} onPress={handleDownloadPress}>
+                        <Icon name="file-download" size={24} color="#fff" />
+                        <Text style={styles.buttonText}>Download</Text>
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.movieOverview}>
+                    {showFullOverview ? movie?.overview : truncatedOverview}
                 </Text>
-                <View style={styles.divider} />
-                <View style={styles.row}>
-                    <View style={styles.column}>
-                        <Text style={styles.sectionTitle}>Release Date</Text>
-                        <Text style={styles.details}>{movie?.release_date}</Text>
-                    </View>
-                    <View style={styles.column}>
-                        <Text style={styles.sectionTitle}>Runtime</Text>
-                        <Text style={styles.details}>{movie?.runtime} minutes</Text>
-                    </View>
-                </View>
-                <View style={styles.divider} />
-                <Text style={styles.sectionTitle}>Production Companies</Text>
-                {movie?.production_companies?.map((company) => (
-                    <View key={company.id} style={styles.companyRow}>
-                        {company.logo_path && (
-                            <Image
-                                source={{ uri: getPoster(company.logo_path) }}
-                                style={styles.companyLogo}
-                            />
-                        )}
-                        <Text style={styles.details}>{company.name}</Text>
-                    </View>
-                ))}
-                <View style={styles.divider} />
-                <Text style={styles.sectionTitle}>Production Countries</Text>
-                <View style={styles.countryRow}>
-                    {movie?.production_countries?.map((country) => (
-                        <Text key={country.iso_3166_1} style={styles.countryText}>
-                            {country.name}
-                        </Text>
-                    ))}
-                </View>
-
-                <Text style={styles.sectionTitle}>Trailer</Text>
-                <FlatList
-                    data={movieImages?.results}
-                    horizontal
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <View style={styles.cardContainer}>
-                            {/* <Text style={styles.trailerName}>{item.name}</Text> */}
-                            <TouchableOpacity
-                                style={styles.playButton}
-                                onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${item.key}`)}
-                            >
-                                <Icon name="play-arrow" size={40} color="white" />
+                {movie?.overview?.length > 80 && !showFullOverview && (
+                    <TouchableOpacity onPress={toggleOverview}>
+                        <Text style={styles.readMore}>Read more</Text>
+                    </TouchableOpacity>
+                )}
+                {showFullOverview && (
+                    <TouchableOpacity onPress={toggleOverview}>
+                        <Text style={styles.readMore}>Read less</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+            {recommendations.length > 0 && (
+                <View style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>Recommendations</Text>
+                    <FlatList
+                        data={recommendations}
+                        horizontal
+                        renderItem={({ item }) => (
+                            <TouchableOpacity style={styles.recommendationCard}>
+                                <Image
+                                    source={{ uri: getPoster(item?.poster_path) }}
+                                    style={styles.recommendationImage}
+                                />
+                                <Text style={styles.recommendationText}>{item?.title}</Text>
                             </TouchableOpacity>
-                        </View>
-                    )}
-                />
-
+                        )}
+                        keyExtractor={(item) => item.id.toString()}
+                    />
+                </View>
+            )}
+            <View style={styles.movieDetails}>
+                <Text style={styles.detailsText}>Rating: {movie?.vote_average} ({movie?.vote_count} votes)</Text>
+                <Text style={styles.detailsText}>Status: {movie?.status}</Text>
             </View>
         </ScrollView>
     );
@@ -163,239 +160,126 @@ const styles = StyleSheet.create({
     },
     imageBackground: {
         width: '100%',
-        height: 370,
+        height: 300,
         justifyContent: 'flex-end',
-    },
-    overlay: {
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        padding: 20,
-        position: 'relative',
+        paddingTop: StatusBar.currentHeight,
+        borderBottomLeftRadius: 50
     },
     backButton: {
         position: 'absolute',
-        top: 40, // Adjusted top value for better alignment
-        left: 20,
+        top: 40,
+        left: 16,
         zIndex: 1,
+        padding: 12,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        borderRadius: 24, 
     },
-    shareButton: {
-        position: 'absolute',
-        top: 40, // Adjusted top value for better alignment
-        right: 20,
-        zIndex: 1,
+    movieInfoContainer: {
+        padding: 16,
+        backgroundColor: '#141414',
     },
-    title: {
-        fontSize: 30,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    tagline: {
-        fontSize: 16,
-        color: '#ccc',
-        fontStyle: 'italic',
-        marginVertical: 8,
-    },
-    ratingsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 10,
-    },
-    voteText: {
-        fontSize: 16,
-        color: '#FFD700',
-        marginLeft: 5,
-    },
-    voteCount: {
-        fontSize: 14,
-        color: '#aaa',
-        marginLeft: 8,
-    },
-    playButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 5,
-        marginTop: 10,
-        alignSelf: 'flex-start',
-    },
-    playText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: 'white',
-        marginLeft: 8,
-    },
-    detailsContainer: {
-        padding: 20,
-        backgroundColor: '#1c1c1c',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        marginTop: -10,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 10,
-    },
-    overview: {
-        fontSize: 16,
-        lineHeight: 24,
-        color: '#ccc',
-    },
-    details: {
-        fontSize: 14,
-        color: '#aaa',
-        marginBottom: 8,
-    },
-    countryRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginVertical: 10,
-    },
-    countryText: {
-        fontSize: 14,
-        color: '#aaa',
-        marginRight: 12,
-        marginBottom: 5,
-        backgroundColor: '#333',
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        borderRadius: 5,
-    },
-    divider: {
-        height: 1,
-        backgroundColor: '#333',
-        marginVertical: 16,
-    },
-    row: {
+    movieHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-    },
-    column: {
-        flex: 1,
-    },
-    companyRow: {
-        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
     },
-    companyLogo: {
-        width: 50,
-        height: 20,
-        resizeMode: 'contain',
-        marginRight: 8,
+    movieTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    iconContainer: {
+        flexDirection: 'row',
+    },
+    icon: {
+        marginLeft: 16,
+    },
+    movieOverview: {
+        fontSize: 16,
+        color: '#ccc',
+        marginTop: 8,
     },
     center: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#141414',
     },
-    recommendationImage: {
-        width: 200,
-        height: 150,
-        borderRadius: 10,
+    readMore: {
+        fontSize: 16,
+        color: '#E50914',
+        marginTop: 0,
+        textDecorationLine: 'underline',
     },
-    recommendationTitle: {
-        fontSize: 14,
-        marginTop: 5,
-        color: '#333',
-        textAlign: 'center',
-    },
-
-    recommendationsContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 20,
-        marginTop: 20,  // Added space from the movie details section
-    },
-    recommendationsTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 15,
-    },
-    recommendationsList: {
-        paddingLeft: 10,
-    },
-    recommendationCard: {
-        width: 180,  // Adjusted width for a more compact look
-        marginRight: 20,
-        marginBottom: 20,  // Added bottom margin for more space between cards
-        borderRadius: 12,  // More rounded corners for a sleek look
-        backgroundColor: '#222',  // Darker background to match theme
-        elevation: 5,  // Added shadow for a 3D effect
-        overflow: 'hidden',
-    },
-    recommendationImage: {
-        width: '100%',
-        height: 250,  // Adjusted image height for better visual proportions
-        borderBottomLeftRadius: 12,
-        borderBottomRightRadius: 12,
-    },
-    recommendationTitle: {
-        fontSize: 16,  // Slightly bigger title font
-        fontWeight: 'bold',
-        padding: 8,
-        color: '#fff',  // White text for better contrast
-        textAlign: 'center',
-    },
-    backButton: {
-        position: 'absolute',
-        top: 40,
-        left: 20,
-        zIndex: 1,
-        padding: 10, // Optional: Add padding for better touch area
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Optional: Add a semi-transparent background
-        borderRadius: 20, // Optional: Round the button
-    },
-    imageName: {
-        color: '#fff',  // Or any color you prefer for the text
-        textAlign: 'center',
-        fontSize: 14,
-    },
-
-    cardContainer: {
-        backgroundColor: '#333',
-        borderRadius: 12,
-        marginRight: 20,
-        padding: 10,
-        width: 100,
-        alignItems: 'center',  // Center content horizontally
-        justifyContent: 'center', // Center content vertically
-        elevation: 5,  // Adds shadow on Android
-        shadowColor: '#000', // Shadow color for iOS
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3, // Subtle shadow
-        shadowRadius: 8, // Soft shadow effect
-        transform: [{ scale: 1 }], // Add subtle scaling on tap for interaction feedback
-    },
-    trailerName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#fff',  // White text on dark background
-        marginBottom: 15, // Space between name and play button
-        textAlign: 'center',
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 16,
     },
     playButton: {
         backgroundColor: '#E50914',
-        padding: 10,
-        borderRadius: 50, // Circular button for a more prominent effect
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 24,
+        width: '48%',
         alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 5,
+        flexDirection: 'row',
+        justifyContent: "center"
+    },
+    downloadButton: {
+        backgroundColor: '#333',
+        paddingVertical: 10,
+        paddingHorizontal: 0,
+        borderRadius: 24,
+        width: '48%',
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center'
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: 8
+    },
+    sectionContainer: {
+        paddingHorizontal: 16,
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 10
+    },
+    recommendationCard: {
+        marginRight: 16,
+        alignItems: 'center',
+    },
+    recommendationImage: {
+        width: 150,
+        height: 180,
+        borderRadius: 8,
+        marginTop: 10
+    },
+    recommendationText: {
+        fontSize: 14,
+        color: '#fff',
+        marginTop: 8,
+        width: 150,
+        textAlign: 'center',
+    },
+    movieDetails: {
+        marginTop: 16,
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#333',
+        paddingHorizontal: 16,
+    },
+    detailsText: {
+        color: '#ccc',
+        fontSize: 16,
+        marginBottom: 4,
     },
 });
 
 export default MovieScreen;
-
-
-{/* <View style={styles.recommendationsContainer}>
-<Text style={styles.recommendationsTitle}>Recommendations</Text>
-<FlatList
-    data={recommendations}
-    horizontal
-    keyExtractor={(item) => item.id.toString()}
-    renderItem={renderRecommendation}
-    contentContainerStyle={styles.recommendationsList}
-/>
-</View> */}

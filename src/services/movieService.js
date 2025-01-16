@@ -24,8 +24,6 @@ const getAllGenres = () => TMDB_HTTP_REQUEST.get(ENDPOINTS.genres);
 
 const getPoster = (path) => `${TMDB_IMAGE_BASE_URL}/original${path}`;
 
-const getVideo = (key) => `${YOUTUBE_BASE_URL}?v=${key}`;
-
 const getMovieById = (movieId, append_to_response = "") =>
     TMDB_HTTP_REQUEST.get(
         `${ENDPOINTS.movie}/${movieId}`,
@@ -38,7 +36,8 @@ const getMovieRecommendations = (movieId) =>
 const getMovieImages = (movieId) =>
     TMDB_HTTP_REQUEST.get(ENDPOINTS.movie_videos(movieId));
 
-// const getMovieList = () => TMDB_HTTP_REQUEST.get(ENDPOINTS.genres);
+const getMovieTrailer = (movieId) =>
+    TMDB_HTTP_REQUEST.get(ENDPOINTS.movie_videos(movieId));
 
 export {
     getNowPlayingMovies,
@@ -46,9 +45,8 @@ export {
     getAllGenres,
     getPoster,
     getMovieById,
-    getVideo,
     getTopRated,
     getMovieImages,
     getMovieRecommendations,
-    // getMovieList
+    getMovieTrailer
 };

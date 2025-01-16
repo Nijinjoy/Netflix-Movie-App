@@ -13,7 +13,6 @@ const ENDPOINTS = {
     top_rated: "/movie/top_rated",
     movie_recommendations: (movieId) => `/movie/${movieId}/recommendations`,
     movie_videos: (movieId) => `/movie/${movieId}/videos`,
-    // movie_list: "/genre/movie/list"
 }
 
 const APPEND_TO_RESPONSE = {

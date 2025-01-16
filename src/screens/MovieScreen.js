@@ -6,15 +6,16 @@ import {
     ActivityIndicator,
     ImageBackground,
     ScrollView,
-    Linking,
-    Image,
     TouchableOpacity,
     FlatList,
-    Pressable,
-    StatusBar
+    Share,
+    StatusBar,
+    Modal,
+    Image,
 } from 'react-native';
+import Video from 'react-native-video';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { getMovieById, getPoster, getVideo, getMovieRecommendations, getMovieImages } from '../services/movieService';
+import { getMovieById, getPoster, getMovieRecommendations, getMovieImages, getMovieTrailer } from '../services/movieService';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const MovieScreen = () => {
@@ -26,6 +27,8 @@ const MovieScreen = () => {
     const [movieImages, setMovieImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showFullOverview, setShowFullOverview] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [trailerUrl, setTrailerUrl] = useState('');
 
     useEffect(() => {
         getMovieById(movieId)
@@ -48,16 +51,56 @@ const MovieScreen = () => {
         navigation.goBack();
     };
 
-    const handleSharePress = () => {
-        console.log('Share button pressed');
+    const handleSharePress = async () => {
+        try {
+            const message = `Check out this movie:
+- Title: ${movie?.title}
+- Rating: ${movie?.vote_average} (${movie?.vote_count} votes)
+- Status: ${movie?.status}
+- Runtime: ${convertRuntime(movie?.runtime)}
+Discover more at: https://www.themoviedb.org/movie/${movie?.id}`;
+            const result = await Share.share({
+                message: message,
+            });
+            if (result.action === Share.sharedAction) {
+                if (result.activityType) {
+                    console.log('Shared with activity type:', result.activityType);
+                } else {
+                    console.log('Shared successfully!');
+                }
+            } else if (result.action === Share.dismissedAction) {
+                console.log('Share dismissed.');
+            }
+        } catch (error) {
+            console.error('Error sharing movie details:', error.message);
+        }
     };
 
     const handleBookmarkPress = () => {
         console.log('Bookmark button pressed');
     };
 
-    const handlePlayPress = () => {
-        console.log('Play button pressed');
+    const handlePlayPress = async () => {
+        try {
+            const response = await getMovieTrailer(movieId);
+            const trailers = response?.data?.results || [];
+            const trailer = trailers.find((item) => item.type === 'Trailer' && item.site === 'YouTube');
+
+            if (trailer) {
+                const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
+                navigation.navigate('TrailerScreen', { videoUrl: youtubeUrl });
+            } else {
+                console.log('No trailer available.');
+                alert('Trailer not available for this movie.');
+            }
+        } catch (error) {
+            console.error('Error fetching movie trailer:', error);
+        }
+    };
+
+    const handleModalClose = () => {
+        setIsModalVisible(false);
+        setTrailerUrl('');
     };
 
     const handleDownloadPress = () => {
@@ -76,6 +119,12 @@ const MovieScreen = () => {
                 <ActivityIndicator size="large" color="#E50914" />
             </View>
         );
+    }
+
+    const convertRuntime = (runtime) => {
+        const hours = Math.floor(runtime / 60);
+        const minutes = runtime % 60;
+        return `${hours}h ${minutes}m`;
     }
 
     return (
@@ -126,6 +175,29 @@ const MovieScreen = () => {
                     </TouchableOpacity>
                 )}
             </View>
+            <View style={styles.movieDetails}>
+                <Text style={styles.detailsText}>Rating: {movie?.vote_average} ({movie?.vote_count} votes)</Text>
+                <Text style={styles.detailsText}>Status: {movie?.status}</Text>
+                <Text style={styles.detailsText}>Release Date: {movie?.release_date}</Text>
+                <Text style={styles.detailsText}>Revenue: ${movie?.revenue?.toLocaleString()}</Text>
+                {movie?.runtime && (
+                    <Text style={styles.detailsText}>
+                        Runtime: {convertRuntime(movie?.runtime)}
+                    </Text>
+                )}
+                <Text style={styles.detailsText}>Language: {movie?.spoken_languages?.[0]?.name}</Text>
+                <View style={styles.genreContainer}>
+                    <Text style={styles.sectionTitle}>Genres</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {movie?.genres?.map((genre) => (
+                            <View key={genre.id} style={styles.genreChip}>
+                                <Text style={styles.genreText}>{genre.name}</Text>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+
+            </View>
             {recommendations.length > 0 && (
                 <View style={styles.sectionContainer}>
                     <Text style={styles.sectionTitle}>Recommendations</Text>
@@ -145,10 +217,25 @@ const MovieScreen = () => {
                     />
                 </View>
             )}
-            <View style={styles.movieDetails}>
-                <Text style={styles.detailsText}>Rating: {movie?.vote_average} ({movie?.vote_count} votes)</Text>
-                <Text style={styles.detailsText}>Status: {movie?.status}</Text>
-            </View>
+
+            <Modal visible={isModalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalContainer}>
+                    <TouchableOpacity style={styles.closeButton} onPress={handleModalClose}>
+                        <Icon name="close" size={28} color="#fff" />
+                    </TouchableOpacity>
+                    {/* {trailerUrl ? (
+                        <Video
+                            source={{ uri: trailerUrl }}
+                            style={styles.videoPlayer}
+                            controls
+                        />
+                    ) : (
+                        <Text>Trailer not available</Text>
+                    )} */}
+
+                </View>
+            </Modal>
+
         </ScrollView>
     );
 };
@@ -172,7 +259,7 @@ const styles = StyleSheet.create({
         zIndex: 1,
         padding: 12,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        borderRadius: 24, 
+        borderRadius: 24,
     },
     movieInfoContainer: {
         padding: 16,
@@ -280,6 +367,29 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 4,
     },
+    genreContainer: {
+        marginTop: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: '#1E1E1E',
+        borderRadius: 12,
+    },
+    genreChip: {
+        backgroundColor: '#E50914',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 16,
+        marginRight: 8,
+    },
+    genreText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.9)' },
+    closeButton: { position: 'absolute', top: 50, right: 20, zIndex: 1 },
+    videoPlayer: { width: '100%', height: 300 },
 });
 
 export default MovieScreen;
+

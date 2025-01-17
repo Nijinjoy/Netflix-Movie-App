@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, SafeAreaView, Dimensions, TextInput } from 'react-native';
-import { getAllGenres } from '../services/movieService';
-import { MaterialIcons } from 'react-native-vector-icons';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Platform, Animated, Easing } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
+import { getAllGenres, selectedGenre } from '../services/movieService';
 
-const { width } = Dimensions.get('window');
-
-const CategoryScreen = () => {
+const CategoryScreen = ({ navigation }) => {
+    const [searchText, setSearchText] = useState('');
     const [genres, setGenres] = useState([]);
+    const [animations] = useState(new Animated.Value(0));
+
+    console.log("genres===>", genres);
 
     useEffect(() => {
         getAllGenres()
@@ -14,130 +17,127 @@ const CategoryScreen = () => {
             .catch((error) => console.error("Error fetching genres:", error));
     }, []);
 
-    const renderCategory = ({ item }) => {
-        return (
-            <TouchableOpacity style={styles.categoryCard}>
-                <Image
-                    source={{ uri: `https://via.placeholder.com/300x450?text=${item.name}` }}
-                    style={styles.categoryImage}
-                />
-                <Text style={styles.categoryName}>{item.name}</Text>
-            </TouchableOpacity>
-        );
+    const filteredGenres = genres.filter((genre) =>
+        genre.name.toLowerCase().includes(searchText.toLowerCase())
+    );
+
+    const renderGenreItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.categoryCard}
+            onPress={() => handleGenreSelect(item.id)} // Call a handler with the genre ID
+        >
+            <Text style={styles.categoryText}>{item.name}</Text>
+        </TouchableOpacity>
+    );
+
+
+    const handleGenreSelect = (genreId) => {
+        navigation.navigate('ListingScreen', { genreId }); 
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Browse Categories</Text>
-                <TouchableOpacity style={styles.searchIcon}>
-                    <MaterialIcons name="search" size={28} color="#fff" />
+        <SafeAreaView style={styles.container}>
+            <StatusBar
+                barStyle="light-content"
+                backgroundColor="#00bcd4"
+            />
+            <LinearGradient
+                colors={['#00bcd4', '#009688']}
+                style={styles.header}
+            >
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <MaterialIcons name="arrow-back" size={30} color="#fff" />
                 </TouchableOpacity>
-            </View>
-            <View style={styles.container}>
-                <FlatList
-                    data={genres}
-                    renderItem={({ item }) => (
-                        <View style={styles.categorySection}>
-                            <Text style={styles.categoryTitle}>{item.name}</Text>
-                            <FlatList
-                                data={new Array(10).fill(item)} // Fill with dummy data for testing, replace with real data
-                                renderItem={renderCategory}
-                                keyExtractor={(movie, index) => index.toString()}
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={styles.genreList}
-                            />
-                        </View>
-                    )}
-                    keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.list}
+                <Text style={styles.headerText}>Categories</Text>
+            </LinearGradient>
+            <View style={styles.searchContainer}>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search Categories"
+                    value={searchText}
+                    onChangeText={setSearchText}
                 />
             </View>
+            <FlatList
+                data={filteredGenres}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderGenreItem}
+                numColumns={2}
+                contentContainerStyle={styles.categoryList}
+                columnWrapperStyle={styles.columnWrapper}
+
+            />
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    safeArea: {
+    container: {
         flex: 1,
-        backgroundColor: '#121212',
+        backgroundColor: '#f5f5f5',
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#000',
-        borderBottomWidth: 2,
-        borderBottomColor: '#ff6347',
+        paddingTop: Platform.OS === 'ios' ? 50 : 30,
+        paddingBottom: 20,
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        marginBottom: 10,
     },
-    headerTitle: {
+    backButton: {
+        paddingLeft: 10,
+    },
+    headerText: {
         fontSize: 24,
         fontWeight: 'bold',
         color: '#fff',
-        letterSpacing: 1,
+        marginRight: 40,
+        textAlign: 'center',
+        flex: 1, 
     },
-    searchIcon: {
-        padding: 8,
-        borderRadius: 25,
-        backgroundColor: '#ff6347',
+    searchContainer: {
+        padding: 15,
+        paddingTop: 10,
     },
-    container: {
-        flex: 1,
-        paddingHorizontal: 16,
+    searchInput: {
+        height: 50,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 25, // Rounded input field
+        paddingLeft: 20,
+        fontSize: 16,
+        backgroundColor: '#fff',
+        shadowColor: '#000', // Adds shadow to the input field for depth
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
     },
-    list: {
-        paddingBottom: 16,
-    },
-    categorySection: {
-        marginBottom: 32,
-    },
-    categoryTitle: {
-        fontSize: 26,
-        fontWeight: 'bold',
-        color: '#fff',
-        marginBottom: 16,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-        borderBottomWidth: 3,
-        borderBottomColor: '#ff6347', // Accent color
-        paddingBottom: 6,
+    categoryList: {
+        padding: 15,
     },
     categoryCard: {
-        marginRight: 16,
-        width: (width / 3) - 24, // Adjust card size for 3 columns in horizontal scroll
-        borderRadius: 10,
-        overflow: 'hidden',
-        backgroundColor: '#1f1f1f',
-        position: 'relative',
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 4,
+        backgroundColor: '#fff',
+        padding: 15,
+        borderRadius: 15,
+        marginBottom: 10,
+        elevation: 3,
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+        minWidth: '45%',
+        height: 130,
+        marginHorizontal: 10,
     },
-    categoryImage: {
-        width: '100%',
-        height: 200,
-        borderRadius: 10,
-        resizeMode: 'cover',
-    },
-    categoryName: {
-        position: 'absolute',
-        bottom: 12,
-        left: 12,
-        color: '#fff',
+    categoryText: {
         fontSize: 18,
-        fontWeight: 'bold',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        paddingHorizontal: 8,
-        borderRadius: 4,
-    },
-    genreList: {
-        paddingVertical: 8,
+        color: '#333',
     },
 });
 
 export default CategoryScreen;
+
+

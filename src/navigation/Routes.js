@@ -9,7 +9,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import CategoryScreen from '../screens/CategoryScreen';
 import MovieScreen from '../screens/MovieScreen';
-import TrailerScreen from '../screens/TrailerScreen';
+import ListingScreen from '../screens/ListingScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -87,7 +87,7 @@ const Routes = () => {
                 <Stack.Screen name="Main" component={BottomTabNavigator} />
                 <Stack.Screen name="movie" component={MovieScreen} />
                 <Stack.Screen name="profile" component={ProfileScreen} />
-                <Stack.Screen name="TrailerScreen" component={TrailerScreen} />
+                <Stack.Screen name="ListingScreen" component={ListingScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

@@ -11,12 +11,14 @@ import {
     Share,
     StatusBar,
     Modal,
+    Linking,
     Image,
 } from 'react-native';
 import Video from 'react-native-video';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { getMovieById, getPoster, getMovieRecommendations, getMovieImages, getMovieTrailer } from '../services/movieService';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import ShimmerPlaceholder from 'react-native-shimmer-placeholder';
 
 const MovieScreen = () => {
     const route = useRoute();
@@ -88,7 +90,7 @@ Discover more at: https://www.themoviedb.org/movie/${movie?.id}`;
 
             if (trailer) {
                 const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
-                navigation.navigate('TrailerScreen', { videoUrl: youtubeUrl });
+                Linking.openURL(youtubeUrl);  // Opens the YouTube URL directly in the browser
             } else {
                 console.log('No trailer available.');
                 alert('Trailer not available for this movie.');
@@ -113,13 +115,32 @@ Discover more at: https://www.themoviedb.org/movie/${movie?.id}`;
         setShowFullOverview((prevState) => !prevState);
     };
 
+
     if (loading) {
         return (
-            <View style={styles.center}>
-                <ActivityIndicator size="large" color="#E50914" />
+            <View style={styles.container}>
+                <ShimmerPlaceholder
+                    style={styles.shimmerImage}
+                    shimmerColors={['#333', '#444', '#555']}
+                />
+                <View style={styles.shimmerTextContainer}>
+                    <ShimmerPlaceholder
+                        style={styles.shimmerTitle}
+                        shimmerColors={['#333', '#444', '#555']}
+                    />
+                    <ShimmerPlaceholder
+                        style={styles.shimmerButton}
+                        shimmerColors={['#333', '#444', '#555']}
+                    />
+                    <ShimmerPlaceholder
+                        style={styles.shimmerOverview}
+                        shimmerColors={['#333', '#444', '#555']}
+                    />
+                </View>
             </View>
         );
     }
+
 
     const convertRuntime = (runtime) => {
         const hours = Math.floor(runtime / 60);
@@ -128,17 +149,20 @@ Discover more at: https://www.themoviedb.org/movie/${movie?.id}`;
     }
 
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+            {/* Fixed section */}
             <ImageBackground
                 source={{ uri: getPoster(movie?.backdrop_path) }}
-                style={styles.imageBackground}
+                style={[styles.imageBackground, { borderBottomLeftRadius: 30, overflow: 'hidden', borderBottomRightRadius: 30 }]}
                 resizeMode="cover"
             >
                 <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
                     <Icon name="arrow-back" size={28} color="#fff" />
                 </TouchableOpacity>
             </ImageBackground>
+
             <View style={styles.movieInfoContainer}>
                 <View style={styles.movieHeader}>
                     <Text style={styles.movieTitle}>{movie?.title}</Text>
@@ -175,68 +199,53 @@ Discover more at: https://www.themoviedb.org/movie/${movie?.id}`;
                     </TouchableOpacity>
                 )}
             </View>
-            <View style={styles.movieDetails}>
-                <Text style={styles.detailsText}>Rating: {movie?.vote_average} ({movie?.vote_count} votes)</Text>
-                <Text style={styles.detailsText}>Status: {movie?.status}</Text>
-                <Text style={styles.detailsText}>Release Date: {movie?.release_date}</Text>
-                <Text style={styles.detailsText}>Revenue: ${movie?.revenue?.toLocaleString()}</Text>
-                {movie?.runtime && (
-                    <Text style={styles.detailsText}>
-                        Runtime: {convertRuntime(movie?.runtime)}
-                    </Text>
-                )}
-                <Text style={styles.detailsText}>Language: {movie?.spoken_languages?.[0]?.name}</Text>
-                <View style={styles.genreContainer}>
-                    <Text style={styles.sectionTitle}>Genres</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {movie?.genres?.map((genre) => (
-                            <View key={genre.id} style={styles.genreChip}>
-                                <Text style={styles.genreText}>{genre.name}</Text>
-                            </View>
-                        ))}
-                    </ScrollView>
+
+            {/* Scrollable content */}
+            <ScrollView contentContainerStyle={styles.scrollableContent}>
+                <View style={styles.movieDetails}>
+                    <Text style={styles.detailsText}>Rating: {movie?.vote_average} ({movie?.vote_count} votes)</Text>
+                    <Text style={styles.detailsText}>Status: {movie?.status}</Text>
+                    <Text style={styles.detailsText}>Release Date: {movie?.release_date}</Text>
+                    <Text style={styles.detailsText}>Revenue: ${movie?.revenue?.toLocaleString()}</Text>
+                    {movie?.runtime && (
+                        <Text style={styles.detailsText}>
+                            Runtime: {convertRuntime(movie?.runtime)}
+                        </Text>
+                    )}
+                    <Text style={styles.detailsText}>Language: {movie?.spoken_languages?.[0]?.name}</Text>
+                    <View style={styles.genreContainer}>
+                        <Text style={styles.sectionTitle}>Genres</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {movie?.genres?.map((genre) => (
+                                <View key={genre.id} style={styles.genreChip}>
+                                    <Text style={styles.genreText}>{genre.name}</Text>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    </View>
                 </View>
 
-            </View>
-            {recommendations.length > 0 && (
-                <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>Recommendations</Text>
-                    <FlatList
-                        data={recommendations}
-                        horizontal
-                        renderItem={({ item }) => (
-                            <TouchableOpacity style={styles.recommendationCard}>
-                                <Image
-                                    source={{ uri: getPoster(item?.poster_path) }}
-                                    style={styles.recommendationImage}
-                                />
-                                <Text style={styles.recommendationText}>{item?.title}</Text>
-                            </TouchableOpacity>
-                        )}
-                        keyExtractor={(item) => item.id.toString()}
-                    />
-                </View>
-            )}
-
-            <Modal visible={isModalVisible} animationType="slide" transparent={true}>
-                <View style={styles.modalContainer}>
-                    <TouchableOpacity style={styles.closeButton} onPress={handleModalClose}>
-                        <Icon name="close" size={28} color="#fff" />
-                    </TouchableOpacity>
-                    {/* {trailerUrl ? (
-                        <Video
-                            source={{ uri: trailerUrl }}
-                            style={styles.videoPlayer}
-                            controls
+                {recommendations.length > 0 && (
+                    <View style={styles.sectionContainer}>
+                        <Text style={styles.sectionTitle}>Recommendations</Text>
+                        <FlatList
+                            data={recommendations}
+                            horizontal
+                            renderItem={({ item }) => (
+                                <TouchableOpacity style={styles.recommendationCard}>
+                                    <Image
+                                        source={{ uri: getPoster(item?.poster_path) }}
+                                        style={styles.recommendationImage}
+                                    />
+                                    <Text style={styles.recommendationText}>{item?.title}</Text>
+                                </TouchableOpacity>
+                            )}
+                            keyExtractor={(item) => item.id.toString()}
                         />
-                    ) : (
-                        <Text>Trailer not available</Text>
-                    )} */}
-
-                </View>
-            </Modal>
-
-        </ScrollView>
+                    </View>
+                )}
+            </ScrollView>
+        </View>
     );
 };
 
@@ -247,10 +256,10 @@ const styles = StyleSheet.create({
     },
     imageBackground: {
         width: '100%',
-        height: 300,
+        height: 250,
         justifyContent: 'flex-end',
         paddingTop: StatusBar.currentHeight,
-        borderBottomLeftRadius: 50
+        borderBottomLeftRadius: 50,
     },
     backButton: {
         position: 'absolute',
@@ -274,29 +283,14 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: '#fff',
+        flex: 1,
     },
     iconContainer: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
     },
     icon: {
         marginLeft: 16,
-    },
-    movieOverview: {
-        fontSize: 16,
-        color: '#ccc',
-        marginTop: 8,
-    },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#141414',
-    },
-    readMore: {
-        fontSize: 16,
-        color: '#E50914',
-        marginTop: 0,
-        textDecorationLine: 'underline',
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -329,67 +323,68 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginLeft: 8
     },
-    sectionContainer: {
-        paddingHorizontal: 16,
-    },
-    sectionTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
+    movieOverview: {
+        fontSize: 16,
         color: '#fff',
-        marginBottom: 10
+        marginTop: 10,
     },
-    recommendationCard: {
-        marginRight: 16,
-        alignItems: 'center',
+    readMore: {
+        color: '#E50914',
+        textDecorationLine: 'underline',
     },
-    recommendationImage: {
-        width: 150,
-        height: 180,
-        borderRadius: 8,
-        marginTop: 10
-    },
-    recommendationText: {
-        fontSize: 14,
-        color: '#fff',
-        marginTop: 8,
-        width: 150,
-        textAlign: 'center',
+    scrollableContent: {
+        paddingBottom: 0,
     },
     movieDetails: {
-        marginTop: 16,
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#333',
         paddingHorizontal: 16,
     },
     detailsText: {
-        color: '#ccc',
+        color: '#fff',
         fontSize: 16,
-        marginBottom: 4,
+        marginVertical: 4,
     },
     genreContainer: {
         marginTop: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        backgroundColor: '#1E1E1E',
-        borderRadius: 12,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 8,
     },
     genreChip: {
-        backgroundColor: '#E50914',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
+        backgroundColor: '#333',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
         marginRight: 8,
     },
     genreText: {
         color: '#fff',
-        fontSize: 14,
-        fontWeight: 'bold',
     },
-    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.9)' },
-    closeButton: { position: 'absolute', top: 50, right: 20, zIndex: 1 },
-    videoPlayer: { width: '100%', height: 300 },
+    recommendationCard: {
+        marginRight: 16,
+        width: 120,
+    },
+    recommendationImage: {
+        width: '100%',
+        height: 180,
+        borderRadius: 8,
+    },
+    recommendationText: {
+        color: '#fff',
+        marginTop: 15,
+        textAlign: 'center',
+    },
+    sectionContainer: {
+        paddingHorizontal: 16,
+        marginTop: 10
+    },
+    shimmerImage: { width: '100%', height: 250 },
+    shimmerTextContainer: { padding: 16 },
+    shimmerTitle: { height: 20, width: '70%', marginBottom: 8, borderRadius: 4 },
+    shimmerButton: { height: 40, width: '40%', marginBottom: 8, borderRadius: 20 },
+    shimmerOverview: { height: 60, width: '100%', borderRadius: 4 },
 });
 
 export default MovieScreen;
-

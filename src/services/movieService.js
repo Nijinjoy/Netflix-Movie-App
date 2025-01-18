@@ -22,6 +22,14 @@ const getTopRated = () =>
 
 const getAllGenres = () => TMDB_HTTP_REQUEST.get(ENDPOINTS.genres);
 
+const selectedGenre = (genreId, page = 1) =>
+    TMDB_HTTP_REQUEST.get(`${ENDPOINTS.selected_genre}`, {
+        params: {
+            with_genres: genreId,
+            page: page,
+        },
+    });
+
 const getPoster = (path) => `${TMDB_IMAGE_BASE_URL}/original${path}`;
 
 const getMovieById = (movieId, append_to_response = "") =>
@@ -48,5 +56,6 @@ export {
     getTopRated,
     getMovieImages,
     getMovieRecommendations,
-    getMovieTrailer
+    getMovieTrailer,
+    selectedGenre
 };

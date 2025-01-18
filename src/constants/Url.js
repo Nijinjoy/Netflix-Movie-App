@@ -9,6 +9,7 @@ const ENDPOINTS = {
     now_playing_movies: "/movie/now_playing",
     upcoming_movies: "/movie/upcoming",
     genres: "/genre/movie/list",
+    selected_genre: "/discover/movie",
     movie: "/movie",
     top_rated: "/movie/top_rated",
     movie_recommendations: (movieId) => `/movie/${movieId}/recommendations`,
